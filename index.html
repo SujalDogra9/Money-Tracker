@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Money Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon"><i data-lucide="wallet"></i></div>
+        <div class="brand-text"><h2>Money Tracker</h2><span>Personal Finance</span></div>
+        <button class="btn-icon mobile-only" id="closeSidebarBtn"><i data-lucide="x"></i></button>
+      </div>
+      <div class="sidebar-balance">
+        <span class="label">Net Balance</span>
+        <div class="val" id="sidebarNetBalance">₹0.00</div>
+        <small id="sidebarMonthLabel">Current Month</small>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="#dashboard" class="nav-link active" data-view="dashboard"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></a>
+        <a href="#income" class="nav-link" data-view="income"><i data-lucide="arrow-down-left"></i><span>Income</span><span class="nav-badge" id="navIncBadge">0</span></a>
+        <a href="#expenses" class="nav-link" data-view="expenses"><i data-lucide="arrow-up-right"></i><span>Expenses</span><span class="nav-badge" id="navExpBadge">0</span></a>
+        <a href="#transactions" class="nav-link" data-view="transactions"><i data-lucide="list"></i><span>Transactions</span></a>
+        <a href="#reports" class="nav-link" data-view="reports"><i data-lucide="bar-chart-2"></i><span>Reports & Summary</span></a>
+        <a href="#settings" class="nav-link" data-view="settings"><i data-lucide="hard-drive"></i><span>Backup & Data</span></a>
+      </nav>
+    </aside>
+
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+    <!-- Main Content -->
+    <div class="main-wrapper">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="btn-icon mobile-only" id="menuBtn"><i data-lucide="menu"></i></button>
+          <div><h1 class="page-title" id="pageTitle">Dashboard</h1><p class="page-subtitle" id="pageSubtitle">Track your daily income and expenditures</p></div>
+        </div>
+        <div class="topbar-right">
+          <div class="month-selector"><i data-lucide="calendar"></i><input type="month" id="globalMonthPicker"></div>
+          <button class="btn btn-outline" onclick="app.openModal('expense')"><i data-lucide="plus"></i><span>Add Expense</span></button>
+          <button class="btn btn-primary" onclick="app.openModal('income')"><i data-lucide="plus"></i><span>Add Income</span></button>
+        </div>
+      </header>
+
+      <main class="content-body">
+        <!-- 1. DASHBOARD -->
+        <section id="view-dashboard" class="view-section active">
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-header"><span class="kpi-title">Monthly Income</span><div class="kpi-icon inc-icon"><i data-lucide="arrow-down-left"></i></div></div>
+              <div class="kpi-val text-inc" id="kpiIncome">₹0.00</div>
+              <div class="kpi-footer"><span class="badge badge-inc">Income</span><span id="kpiIncomeCount">0 records</span></div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-header"><span class="kpi-title">Monthly Expenses</span><div class="kpi-icon exp-icon"><i data-lucide="arrow-up-right"></i></div></div>
+              <div class="kpi-val text-exp" id="kpiExpense">₹0.00</div>
+              <div class="kpi-footer"><span class="badge badge-exp">Expense</span><span id="kpiExpenseCount">0 records</span></div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-header"><span class="kpi-title">Net Balance</span><div class="kpi-icon"><i data-lucide="scale"></i></div></div>
+              <div class="kpi-val" id="kpiBalance">₹0.00</div>
+              <div class="kpi-footer"><span class="badge" id="kpiBalanceStatus">Balanced</span><span>Inflow - Outflow</span></div>
+            </div>
+          </div>
+
+          <div class="charts-grid">
+            <div class="card chart-card">
+              <div class="card-header"><h3>Income vs Expenses (6-Month Trend)</h3><p>Monthly cash flow comparison</p></div>
+              <div class="chart-box"><canvas id="chartIncomeExpense"></canvas></div>
+            </div>
+            <div class="card chart-card">
+              <div class="card-header"><h3>Expense by Category</h3><p>Spending distribution for the month</p></div>
+              <div class="chart-box doughnut-box"><canvas id="chartCategoryBreakdown"></canvas></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header-flex">
+              <div><h3>Recent Transactions</h3><p>Latest earnings and expenses</p></div>
+              <a href="#transactions" class="btn-link">View All <i data-lucide="chevron-right"></i></a>
+            </div>
+            <div class="table-responsive"><table class="data-table"><thead><tr><th>Date</th><th>Type</th><th>Category / Source</th><th>Description</th><th>Amount</th></tr></thead><tbody id="dashRecentTable"></tbody></table></div>
+          </div>
+        </section>
+
+        <!-- 2. INCOME -->
+        <section id="view-income" class="view-section">
+          <div class="section-banner">
+            <div><h2>Income Records</h2><p>Track earnings from salary, freelancing, scholarship & other sources.</p></div>
+            <div class="banner-right">
+              <div class="stat-badge"><span>Monthly Income</span><strong class="text-inc" id="incomeViewTotal">₹0.00</strong></div>
+              <button class="btn btn-primary" onclick="app.openModal('income')"><i data-lucide="plus"></i> Add Income</button>
+            </div>
+          </div>
+          <div class="filter-bar">
+            <div class="filter-group"><label>Source:</label><select id="incomeSourceFilter" class="input" onchange="app.renderIncome()"><option value="ALL">All Sources</option><option value="Salary">Salary</option><option value="Pocket Money">Pocket Money</option><option value="Scholarship">Scholarship</option><option value="Freelancing">Freelancing</option><option value="Other Income">Other Income</option></select></div>
+            <div class="filter-group search-group"><i data-lucide="search" class="search-icon"></i><input type="text" id="incomeSearchInput" class="input" placeholder="Search description..." oninput="app.renderIncome()"></div>
+          </div>
+          <div class="card table-card"><div class="table-responsive"><table class="data-table"><thead><tr><th>Date</th><th>Source</th><th>Description</th><th>Amount</th><th class="text-right">Actions</th></tr></thead><tbody id="incomeTableBody"></tbody></table></div></div>
+        </section>
+
+        <!-- 3. EXPENSES -->
+        <section id="view-expenses" class="view-section">
+          <div class="section-banner">
+            <div><h2>Expense Management</h2><p>Log and review your daily expenditures and payment methods.</p></div>
+            <div class="banner-right">
+              <div class="stat-badge"><span>Monthly Expenses</span><strong class="text-exp" id="expenseViewTotal">₹0.00</strong></div>
+              <button class="btn btn-primary" onclick="app.openModal('expense')"><i data-lucide="plus"></i> Add Expense</button>
+            </div>
+          </div>
+          <div class="filter-bar">
+            <div class="filter-group"><label>Category:</label><select id="expenseCategoryFilter" class="input" onchange="app.renderExpenses()"><option value="ALL">All Categories</option><option value="Food">Food</option><option value="Travel">Travel</option><option value="Shopping">Shopping</option><option value="Education">Education</option><option value="Rent">Rent</option><option value="Electricity">Electricity</option><option value="Mobile Recharge">Mobile Recharge</option><option value="Entertainment">Entertainment</option><option value="Health">Health</option><option value="Other">Other</option></select></div>
+            <div class="filter-group"><label>Payment:</label><select id="expensePaymentFilter" class="input" onchange="app.renderExpenses()"><option value="ALL">All Methods</option><option value="UPI">UPI</option><option value="Cash">Cash</option><option value="Credit Card">Credit Card</option><option value="Debit Card">Debit Card</option><option value="Net Banking">Net Banking</option></select></div>
+            <div class="filter-group search-group"><i data-lucide="search" class="search-icon"></i><input type="text" id="expenseSearchInput" class="input" placeholder="Search notes..." oninput="app.renderExpenses()"></div>
+          </div>
+          <div class="card table-card"><div class="table-responsive"><table class="data-table"><thead><tr><th>Date</th><th>Category</th><th>Payment Method</th><th>Notes</th><th>Amount</th><th class="text-right">Actions</th></tr></thead><tbody id="expenseTableBody"></tbody></table></div></div>
+        </section>
+
+        <!-- 4. TRANSACTIONS -->
+        <section id="view-transactions" class="view-section">
+          <div class="card">
+            <div class="card-header-flex">
+              <div><h2>Transaction History</h2><p>Unified ledger of all your income and expenses.</p></div>
+              <button class="btn btn-secondary" onclick="app.exportCSV()"><i data-lucide="download"></i> Export CSV</button>
+            </div>
+            <div class="filter-bar">
+              <div class="filter-group search-group" style="flex:1.5;min-width:180px;"><i data-lucide="search" class="search-icon"></i><input type="text" id="txSearchInput" class="input" placeholder="Search description, notes, category..."></div>
+              <div class="filter-group"><label>Type:</label><select id="txTypeFilter" class="input"><option value="ALL">All</option><option value="income">Income</option><option value="expense">Expense</option></select></div>
+              <div class="filter-group"><label>Category:</label><select id="txCategoryFilter" class="input"><option value="ALL">All Categories</option><option value="Salary">Salary</option><option value="Pocket Money">Pocket Money</option><option value="Scholarship">Scholarship</option><option value="Freelancing">Freelancing</option><option value="Food">Food</option><option value="Travel">Travel</option><option value="Shopping">Shopping</option><option value="Education">Education</option><option value="Rent">Rent</option><option value="Electricity">Electricity</option><option value="Mobile Recharge">Mobile Recharge</option><option value="Entertainment">Entertainment</option><option value="Health">Health</option><option value="Other">Other</option></select></div>
+              <div class="filter-group"><label>From:</label><input type="date" id="txFromDate" class="input"></div>
+              <div class="filter-group"><label>To:</label><input type="date" id="txToDate" class="input"></div>
+              <button class="btn btn-ghost" onclick="app.resetTxFilters()">Reset</button>
+            </div>
+            <div class="table-responsive"><table class="data-table"><thead><tr><th>Type</th><th>Date</th><th>Category / Source</th><th>Payment Method</th><th>Description / Notes</th><th>Amount</th><th class="text-right">Actions</th></tr></thead><tbody id="txHistoryTableBody"></tbody></table></div>
+          </div>
+        </section>
+
+        <!-- 5. REPORTS -->
+        <section id="view-reports" class="view-section">
+          <div class="card" style="margin-bottom:1.25rem;">
+            <div class="card-header-flex">
+              <div><h2>Financial Reports</h2><p>Audited performance and cash flow summary.</p></div>
+              <div class="row-gap">
+                <select id="reportPeriodSelect" class="input" onchange="app.renderReports()"><option value="month">Current Month</option><option value="year">Full Year</option><option value="all">All-Time</option></select>
+                <button class="btn btn-secondary" onclick="app.exportCSV()"><i data-lucide="download"></i> Export CSV</button>
+              </div>
+            </div>
+            <div class="kpi-grid">
+              <div class="kpi-card"><span class="kpi-title">Total Inflow</span><div class="kpi-val text-inc" id="repTotalIncome">₹0.00</div></div>
+              <div class="kpi-card"><span class="kpi-title">Total Outflow</span><div class="kpi-val text-exp" id="repTotalExpense">₹0.00</div></div>
+              <div class="kpi-card"><span class="kpi-title">Net Savings</span><div class="kpi-val" id="repNetSavings">₹0.00</div></div>
+              <div class="kpi-card"><span class="kpi-title">Savings Rate</span><div class="kpi-val" id="repSavingsRate">0%</div></div>
+              <div class="kpi-card"><span class="kpi-title">Top Category</span><div class="kpi-val" id="repTopCategory">None</div></div>
+              <div class="kpi-card"><span class="kpi-title">Daily Average Spend</span><div class="kpi-val" id="repDailyAverage">₹0.00</div></div>
+            </div>
+          </div>
+          <div class="charts-grid">
+            <div class="card">
+              <div class="card-header"><h3>Expense by Category</h3></div>
+              <div class="table-responsive"><table class="data-table"><thead><tr><th>Category</th><th>Total Amount</th><th>Share</th></tr></thead><tbody id="repCategoryTableBody"></tbody></table></div>
+            </div>
+            <div class="card">
+              <div class="card-header"><h3>Monthly Cash Flow History</h3></div>
+              <div class="table-responsive"><table class="data-table"><thead><tr><th>Month</th><th>Income</th><th>Expenses</th><th>Net Balance</th></tr></thead><tbody id="repMonthlyTableBody"></tbody></table></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. BACKUP -->
+        <section id="view-settings" class="view-section">
+          <div class="card" style="max-width:550px;">
+            <div class="card-header"><h3><i data-lucide="hard-drive"></i> Data Backup & Restore</h3><p>Export your records as JSON, or restore from a previous backup file.</p></div>
+            <div style="display:flex; flex-direction:column; gap:0.75rem; margin-top:1rem;">
+              <div class="backup-box">
+                <div><strong>Export JSON Backup</strong><p style="font-size:0.78rem; color:var(--text-muted);">Save records to a JSON file on your machine.</p></div>
+                <button class="btn btn-secondary" onclick="app.exportBackup()"><i data-lucide="download"></i> Download</button>
+              </div>
+              <div class="backup-box">
+                <div><strong>Restore from JSON</strong><p style="font-size:0.78rem; color:var(--text-muted);">Upload a previously exported backup file.</p></div>
+                <label class="btn btn-secondary" style="cursor:pointer;"><i data-lucide="upload"></i> Select File<input type="file" id="restoreFileInput" accept=".json" style="display:none;" onchange="app.restoreBackup(event)"></label>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Reusable Dynamic Modal -->
+  <div class="modal-backdrop" id="appModal">
+    <div class="modal-box">
+      <div class="modal-header"><h3 id="modalTitle">Modal</h3><button class="btn-icon" onclick="app.closeModal()"><i data-lucide="x"></i></button></div>
+      <form id="modalForm"><div id="modalBody"></div><div class="modal-actions"><button type="button" class="btn btn-ghost" onclick="app.closeModal()">Cancel</button><button type="submit" class="btn btn-primary">Save Record</button></div></form>
+    </div>
+  </div>
+
+  <div class="toast-box" id="toastBox"></div>
+  <script src="script.js"></script>
+</body>
+</html>
